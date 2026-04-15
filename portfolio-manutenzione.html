@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio — In Manutenzione</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,200&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #080808;
+    --white: #f4f3f0;
+    --accent: #ff3c00;
+    --muted: rgba(244,243,240,0.35);
+    --border: rgba(244,243,240,0.1);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--black);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease, width 0.2s ease, height 0.2s ease, opacity 0.2s ease;
+    mix-blend-mode: normal;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid rgba(255,60,0,0.4);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease, width 0.2s ease, height 0.2s ease, border-color 0.2s ease;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+  }
+
+  /* Scanlines */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+  }
+
+  /* Layout */
+  .page {
+    position: relative;
+    z-index: 2;
+    width: 100vw; height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 36px 48px;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--white);
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards 0.2s;
+  }
+
+  .status-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards 0.4s;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  .status-chip span {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* Center content */
+  .center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 0 0 2px;
+    position: relative;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: slideUp 0.7s ease forwards 0.5s;
+  }
+
+  .headline {
+    font-size: clamp(60px, 10vw, 140px);
+    font-weight: 900;
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    max-width: 900px;
+    overflow: hidden;
+  }
+
+  .headline .line {
+    display: block;
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  .headline .line:nth-child(1) { animation: slideUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards 0.55s; }
+  .headline .line:nth-child(2) { animation: slideUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards 0.7s; }
+  .headline .line:nth-child(3) { animation: slideUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards 0.85s; }
+
+  .headline .stroke {
+    -webkit-text-stroke: 2px var(--white);
+    color: transparent;
+  }
+  .headline .accent { color: var(--accent); }
+
+  .sub-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 40px;
+    margin-top: 48px;
+    opacity: 0;
+    animation: slideUp 0.7s ease forwards 1.05s;
+  }
+
+  .sub-text {
+    font-size: 14px;
+    font-weight: 200;
+    line-height: 1.7;
+    color: var(--muted);
+    max-width: 320px;
+  }
+
+  .divider-v {
+    width: 1px;
+    height: 60px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .email-link {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    color: var(--white);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .email-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* Accent bar — horizontal line top */
+  .accent-bar {
+    position: absolute;
+    top: 0; left: 48px; right: 48px;
+    height: 1px;
+    background: var(--border);
+  }
+  .accent-bar::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0;
+    height: 1px;
+    width: 80px;
+    background: var(--accent);
+    animation: expand 1.2s ease forwards 0.3s;
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+  @keyframes expand {
+    to { transform: scaleX(1); }
+  }
+
+  /* Bottom bar */
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    opacity: 0;
+    animation: fadeIn 0.6s ease forwards 1.2s;
+  }
+
+  .footer-left {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .progress-bar {
+    width: 120px;
+    height: 2px;
+    background: rgba(244,243,240,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    animation: fillBar 2s cubic-bezier(0.16,1,0.3,1) forwards 1.3s;
+  }
+  @keyframes fillBar {
+    to { width: 73%; }
+  }
+
+  /* Big number decoration */
+  .big-number {
+    position: absolute;
+    right: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: clamp(180px, 25vw, 340px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    -webkit-text-stroke: 1px rgba(244,243,240,0.05);
+    color: transparent;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    animation: fadeIn 1s ease forwards 1s;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<div class="page">
+
+  <div class="accent-bar"></div>
+
+  <header>
+    <div class="logo">GD Studio</div>
+    <div class="status-chip">
+      <div class="dot"></div>
+      <span>In manutenzione</span>
+    </div>
+  </header>
+
+  <div class="center">
+
+    <div class="big-number">73</div>
+
+    <div class="eyebrow">— Graphic Designer · Portfolio</div>
+
+    <h1 class="headline">
+      <span class="line">Sito in</span>
+      <span class="line stroke">Lavori</span>
+      <span class="line accent">in corso.</span>
+    </h1>
+
+    <div class="sub-row">
+      <p class="sub-text">
+        Sto costruendo qualcosa di nuovo e di bello. Torna presto — ne varrà la pena.
+      </p>
+      <div class="divider-v"></div>
+      <a class="email-link" href="mailto:ciao@studio.it">ciao@studio.it</a>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="footer-left">Milano, Italia · 2026</div>
+    <div class="progress-wrap">
+      <span class="progress-label">Completamento</span>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <span class="progress-label" id="pct">0%</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // Cursor
+  const cur = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  (function loop() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    cur.style.left = mx + 'px';
+    cur.style.top = my + 'px';
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(loop);
+  })();
+
+  // Progress counter
+  const pct = document.getElementById('pct');
+  let n = 0;
+  setTimeout(() => {
+    const iv = setInterval(() => {
+      n++;
+      pct.textContent = n + '%';
+      if (n >= 73) clearInterval(iv);
+    }, 26);
+  }, 1300);
+</script>
+</body>
+</html>
