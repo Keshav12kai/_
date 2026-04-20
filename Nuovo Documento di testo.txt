@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>Keshav Saini — Grafico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #070707;
+  --white:  #f2f2f2;
+  --dim:    rgba(242,242,242,.38);
+  --faint:  rgba(242,242,242,.10);
+  --border: rgba(242,242,242,.08);
+  --disp:   'Syne', sans-serif;
+  --body:   'DM Sans', sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--white);
+  font-family:var(--body);font-weight:300;line-height:1.6;
+  overflow-x:hidden;cursor:none;
+  -webkit-font-smoothing:antialiased;
+}
+@media(pointer:coarse){body{cursor:auto}#cur,#cur-ring{display:none}}
+
+/* ── GRAIN ── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:9989;pointer-events:none;
+  opacity:.032;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:160px;
+}
+
+/* ── PROGRESS BAR (Now White) ── */
+#prog{position:fixed;top:0;left:0;height:1px;z-index:9000;
+  background:linear-gradient(90deg,rgba(255,255,255,.2),rgba(255,255,255,1));
+  width:0%;pointer-events:none;transition:width .08s linear}
+
+/* ── CURSOR ── */
+#cur{width:8px;height:8px;background:var(--white);border-radius:50%;
+  position:fixed;z-index:9999;pointer-events:none;transform:translate(-50%,-50%);
+  mix-blend-mode:difference;transition:width .25s,height .25s}
+#cur-ring{width:32px;height:32px;border:1px solid rgba(242,242,242,.18);border-radius:50%;
+  position:fixed;z-index:9998;pointer-events:none;transform:translate(-50%,-50%)}
+body.lh #cur{width:48px;height:48px;background:rgba(242,242,242,.1);border:1px solid rgba(242,242,242,.45);mix-blend-mode:normal}
+body.lh #cur-ring{opacity:0}
+
+/* ── NAV ── */
+#nav{position:fixed;top:0;left:0;right:0;z-index:600;
+  padding:1.9rem 5%;display:flex;justify-content:space-between;align-items:center;
+  transition:background .45s,backdrop-filter .45s,border-color .45s}
+#nav.scrolled{background:rgba(7,7,7,.93);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--disp);font-size:1.05rem;font-weight:800;letter-spacing:.07em;color:var(--white);text-decoration:none}
+.nav-r{display:flex;align-items:center;gap:3rem}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links li{position:relative}
+.nav-links a{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);text-decoration:none;font-weight:400;transition:color .25s;padding-bottom:4px}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:100%;height:1px;background:var(--white);transform:scaleX(0);transform-origin:right;transition:transform .35s cubic-bezier(.16,1,.3,1)}
+.nav-links a:hover::after{transform:scaleX(1);transform-origin:left}
+.nav-links a:hover{color:var(--white)}
+#snd{width:2.2rem;height:2.2rem;border:1px solid var(--border);border-radius:50%;background:none;color:var(--dim);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;font-family:var(--body);transition:all .25s}
+#snd:hover{border-color:var(--white);color:var(--white)}
+#snd.off{opacity:.3}
+
+/* ── HERO ── */
+#hero{min-height:100vh;padding:0 5% 5rem;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+
+/* Grid overlay */
+.hero-grid{position:absolute;inset:0;pointer-events:none;z-index:0}
+.hg-h{position:absolute;left:0;right:0;height:1px;background:var(--border)}
+.hg-h:nth-child(1){top:33%}
+.hg-h:nth-child(2){top:66%}
+.hg-v{position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
+.hg-v:nth-child(3){left:33%}
+.hg-v:nth-child(4){left:66%}
+
+/* Corner dot markers */
+.hero-grid::before,.hero-grid::after{
+  content:'';position:absolute;width:5px;height:5px;
+  border-radius:50%;background:rgba(242,242,242,.12);
+}
+.hero-grid::before{top:calc(33% - 2px);left:calc(33% - 2px)}
+.hero-grid::after{top:calc(66% - 2px);left:calc(66% - 2px)}
+
+/* Ticker */
+.ticker{position:absolute;top:0;left:0;right:0;height:2.8rem;overflow:hidden;border-bottom:1px solid var(--border);display:flex;align-items:center;background:rgba(7,7,7,.92);z-index:3}
+.ticker-inner{display:flex;white-space:nowrap;animation:tick 30s linear infinite}
+.ti{font-family:var(--disp);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,242,242,.12);padding:0 3rem}
+.ti.w{color:rgba(242,242,242,.5)}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* Hero text */
+.hero-content{position:relative;z-index:2}
+.hero-label{font-size:.63rem;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);margin-bottom:1.3rem;opacity:0;animation:fi .9s .1s both}
+.hero-name{font-family:var(--disp);font-size:clamp(4.5rem,12vw,10.5rem);font-weight:800;line-height:.87;letter-spacing:-.035em;text-transform:uppercase}
+.hero-name .ln{overflow:hidden;display:block}
+.hero-name .lw{display:block;transform:translateY(110%);animation:su .95s cubic-bezier(.16,1,.3,1) both}
+.hero-name .lw:nth-child(1){animation-delay:.05s}
+.hero-name .lw:nth-child(2){animation-delay:.16s}
+.hero-name .outline{color:transparent;-webkit-text-stroke:1.5px rgba(242,242,242,.6)}
+@keyframes su{to{transform:translateY(0)}}
+.hero-quote{margin-top:1.8rem;font-size:.95rem;font-style:italic;color:rgba(242,242,242,.3);max-width:460px;line-height:1.6;border-left:1px solid var(--border);padding-left:1.2rem;opacity:0;animation:fi .9s .45s both}
+.hero-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:3rem;opacity:0;animation:fi .9s .6s both}
+@keyframes fi{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.hero-desc{max-width:280px;font-size:.83rem;line-height:1.85;color:var(--dim);font-weight:300}
+.hero-status{display:flex;align-items:center;gap:.65rem;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.dot{width:.44rem;height:.44rem;background:#5fd068;border-radius:50%;animation:blink 2.5s ease-in-out infinite;box-shadow:0 0 7px #5fd068}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.hero-scroll{display:flex;flex-direction:column;align-items:center;gap:.5rem;color:var(--faint);font-size:.56rem;letter-spacing:.22em;text-transform:uppercase}
+.scr-line{width:1px;height:3.5rem;background:linear-gradient(to bottom,rgba(242,242,242,.4),transparent);animation:scrl 2.2s ease-in-out infinite}
+@keyframes scrl{0%,100%{transform:scaleY(.4);opacity:.25}50%{transform:scaleY(1);opacity:.8}}
+
+/* Large ghost number */
+.hero-ghost{position:absolute;right:-2%;bottom:-8%;font-family:var(--disp);font-size:clamp(14rem,28vw,24rem);font-weight:800;color:rgba(242,242,242,.018);letter-spacing:-.05em;line-height:1;pointer-events:none;z-index:1;user-select:none}
+
+/* ── SHARED ── */
+.lbl{font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(242,242,242,.3);display:flex;align-items:center;gap:.7rem;margin-bottom:.75rem}
+.lbl::after{content:'';flex:1;max-width:2rem;height:1px;background:var(--white);opacity:.2}
+.sec-h{font-family:var(--disp);font-size:clamp(2.8rem,6.5vw,6rem);font-weight:800;letter-spacing:-.03em;text-transform:uppercase;line-height:.9}
+
+/* Standard Reveal */
+.rev{opacity:0;transform:translateY(26px);transition:opacity .85s cubic-bezier(.16,1,.3,1),transform .85s cubic-bezier(.16,1,.3,1)}
+.rev.on{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.22s}.d3{transition-delay:.34s}.d4{transition-delay:.46s}
+
+/* ── WORKS ── */
+#works{padding:9rem 0 0;border-bottom:1px solid var(--border)}
+.works-top{padding:0 5% 4rem;display:flex;justify-content:space-between;align-items:flex-end}
+.works-num{font-family:var(--disp);font-size:4.5rem;font-weight:800;color:rgba(242,242,242,.035);line-height:1}
+#pfloat{position:fixed;z-index:8000;pointer-events:none;font-family:var(--disp);font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);background:rgba(8,8,8,.9);border:1px solid var(--border);padding:.5rem 1rem;transform:translate(-50%,-140%) scale(.85);opacity:0;transition:opacity .28s,transform .35s cubic-bezier(.16,1,.3,1);backdrop-filter:blur(8px)}
+#pfloat.show{opacity:1;transform:translate(-50%,-140%) scale(1)}
+
+/* PROJECT ROWS (with the new 3D pop up animation) */
+.prow{
+  display:grid;grid-template-columns:4.5rem 1fr auto 3.2rem;align-items:center;
+  gap:1.5rem;padding:1.9rem 5%;border-top:1px solid var(--border);
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:padding-left .45s cubic-bezier(.16,1,.3,1), transform .4s cubic-bezier(.16,1,.3,1);
+}
+/* Pop up scale effect specifically for works */
+.prow.rev {
+  opacity: 0;
+  /* Start pushed down, scaled smaller, and tilted back in 3D */
+  transform: perspective(1000px) translate3d(0, 80px, -50px) rotateX(-5deg) scale(0.9);
+  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.prow.rev.on {
+  opacity: 1;
+  /* Snap into full size perfectly flat */
+  transform: perspective(1000px) translate3d(0, 0, 0) rotateX(0) scale(1);
+}
+
+.prow:last-child{border-bottom:1px solid var(--border)}
+.prow::after{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(242,242,242,.025);transition:width .45s cubic-bezier(.16,1,.3,1)}
+.prow:hover::after{width:100%}
+.prow:hover{padding-left:5.8%}
+.p-idx{font-family:var(--disp);font-size:.85rem;font-weight:400;color:rgba(242,242,242,.18);position:relative;z-index:1}
+.p-ttl{font-family:var(--disp);font-size:clamp(2rem,4.2vw,3.9rem);font-weight:800;letter-spacing:-.025em;text-transform:uppercase;transition:letter-spacing .45s cubic-bezier(.16,1,.3,1);position:relative;z-index:1}
+.prow:hover .p-ttl{letter-spacing:.025em}
+.p-cat{font-size:.6rem;letter-spacing:.17em;text-transform:uppercase;color:rgba(242,242,242,.2);justify-self:end;white-space:nowrap;position:relative;z-index:1}
+.p-arr{width:2.6rem;height:2.6rem;border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(242,242,242,.18);font-size:.8rem;transition:all .38s cubic-bezier(.16,1,.3,1);flex-shrink:0;position:relative;z-index:1}
+.prow:hover .p-arr{border-color:var(--white);color:var(--white);transform:rotate(42deg)}
+
+/* ── ABOUT ── */
+#about{padding:11rem 5%;border-bottom:1px solid var(--border)}
+.about-content{max-width:900px}
+.about-body-main{font-size:clamp(1.5rem,3.5vw,2.2rem);line-height:1.4;color:rgba(242,242,242,.9);margin-top:4rem;font-weight:300;font-family:var(--disp);letter-spacing:-.02em}
+.about-body-sub{font-size:clamp(1rem,2vw,1.05rem);line-height:1.88;color:rgba(242,242,242,.45);margin-top:2rem;max-width:700px}
+.about-body-main strong{color:var(--white);font-weight:700}
+.pills{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:3.5rem}
+.pill{padding:.4rem .9rem;border:1px solid var(--border);font-size:.63rem;letter-spacing:.1em;color:rgba(242,242,242,.38);transition:border-color .28s,color .28s,background .28s;cursor:default}
+.pill:hover{border-color:rgba(242,242,242,.5);color:var(--white);background:rgba(242,242,242,.04)}
+
+/* ── CV ── */
+#cv{padding:11rem 5%;border-bottom:1px solid var(--border)}
+.cv-block{display:grid;grid-template-columns:200px 1fr;gap:5rem;margin-top:5rem;padding-bottom:5.5rem;border-bottom:1px solid var(--border)}
+.cv-block:last-child{border-bottom:none;padding-bottom:0}
+.cv-cat{font-family:var(--disp);font-size:1.2rem;font-weight:800;color:rgba(242,242,242,.12);text-transform:uppercase;letter-spacing:-.02em;position:sticky;top:6.5rem;align-self:start}
+.cv-item{padding:2rem 0;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:start;position:relative;transition:padding-left .38s cubic-bezier(.16,1,.3,1)}
+.cv-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(242,242,242,.022);transition:width .38s}
+.cv-item:hover::before{width:100%}
+.cv-item:hover{padding-left:.8rem}
+.cv-role{font-family:var(--disp);font-size:1.25rem;font-weight:700;margin-bottom:.2rem}
+.cv-co{font-size:.68rem;letter-spacing:.1em;color:rgba(242,242,242,.42);margin-bottom:.75rem;text-transform:uppercase}
+.cv-bl{list-style:none}
+.cv-bl li{font-size:.8rem;color:rgba(242,242,242,.35);line-height:1.7;padding-left:1rem;position:relative;margin-bottom:.3rem}
+.cv-bl li::before{content:'–';position:absolute;left:0;color:rgba(242,242,242,.18)}
+.cv-dt{font-size:.58rem;letter-spacing:.14em;color:rgba(242,242,242,.18);text-transform:uppercase;text-align:right;white-space:nowrap;margin-top:.3rem}
+.sub-lbl{font-size:.56rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(242,242,242,.18);border-top:1px solid var(--border);padding-top:1.2rem;margin:2rem 0 1rem}
+.lang-r{display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--border);font-size:.86rem}
+.lang-r span{font-size:.62rem;color:rgba(242,242,242,.28);letter-spacing:.06em}
+.sk-tags{display:flex;flex-wrap:wrap;gap:.4rem}
+.sk{padding:.36rem .8rem;border:1px solid var(--border);font-size:.63rem;letter-spacing:.08em;color:rgba(242,242,242,.4);transition:all .25s;cursor:default}
+.sk:hover{border-color:var(--white);color:var(--white)}
+.sk.hi{border-color:rgba(242,242,242,.28);color:rgba(242,242,242,.68)}
+
+/* ── CONTACT ── */
+#contact{padding:11rem 5%;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:8rem;align-items:center}
+.c-big{font-family:var(--disp);font-size:clamp(2.5rem,6.5vw,5.5rem);font-weight:800;letter-spacing:-.03em;text-transform:uppercase;line-height:.92}
+.c-big em{font-style:italic;font-weight:400;color:rgba(242,242,242,.45)}
+.c-row{padding:1.6rem 0;border-top:1px solid var(--border)}
+.c-row:last-child{border-bottom:1px solid var(--border)}
+.c-l{font-size:.52rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(242,242,242,.2);margin-bottom:.38rem}
+.c-v{font-size:1.1rem;font-weight:300}
+.c-v a{color:var(--white);text-decoration:none;transition:opacity .25s}
+.c-v a:hover{opacity:.45}
+.avail-dot{display:inline-block;width:.42rem;height:.42rem;background:#5fd068;border-radius:50%;margin-right:.55rem;animation:bl 2.5s ease-in-out infinite;box-shadow:0 0 5px #5fd068}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.18}}
+footer{padding:1.5rem 5%;display:flex;justify-content:space-between;border-top:1px solid var(--border)}
+footer p{font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(242,242,242,.12)}
+
+/* ── MODALS ── */
+.modal{position:fixed;inset:0;z-index:1000;background:var(--bg);transform:translateY(100%);opacity:0;transition:transform .85s cubic-bezier(.16,1,.3,1),opacity .55s;overflow-y:auto;overflow-x:hidden}
+.modal.open{transform:translateY(0);opacity:1}
+.modal-bar{position:sticky;top:0;z-index:10;padding:1.6rem 5%;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(7,7,7,.97) 0%,transparent 100%)}
+.m-back{background:none;border:none;font-family:var(--body);font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,242,242,.32);cursor:pointer;display:flex;align-items:center;gap:.65rem;transition:color .25s}
+.m-back:hover{color:var(--white)}
+.m-back::before{content:'←';font-size:.85rem}
+.m-x{width:2.4rem;height:2.4rem;border:1px solid var(--border);border-radius:50%;background:none;color:rgba(242,242,242,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;transition:all .25s}
+.m-x:hover{border-color:var(--white);color:var(--white)}
+.modal-body{padding:3.5rem 5% 8rem;max-width:1400px;margin:0 auto}
+.m-eye{font-size:.58rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(242,242,242,.28);display:flex;align-items:center;gap:.65rem;margin-bottom:1.2rem}
+.m-eye::before{content:'';display:block;width:1.5rem;height:1px;background:var(--white);opacity:.22}
+.m-title{font-family:var(--disp);font-size:clamp(3.5rem,9vw,8.5rem);font-weight:800;letter-spacing:-.03em;text-transform:uppercase;line-height:.88;margin-bottom:2.5rem}
+.m-meta{display:flex;flex-wrap:wrap;gap:2.5rem;padding:1.6rem 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:4rem}
+.m-mi .l{font-size:.5rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,242,242,.2);margin-bottom:.3rem}
+.m-mi .v{font-size:.88rem;font-weight:400}
+.m-desc{font-size:1.25rem;line-height:1.8;color:rgba(242,242,242,.58);max-width:720px;margin-bottom:4.5rem;font-weight:300}
+.m-desc strong{color:var(--white);font-weight:500}
+.ph{width:100%;background:#0c0c0c;border:1px solid rgba(242,242,242,.055);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;color:rgba(242,242,242,.12);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;font-family:var(--disp)}
+.ph-ico{font-size:1.6rem;opacity:.14}
+.ph.std{aspect-ratio:16/9}.ph.wide{aspect-ratio:21/8}.ph.tall{aspect-ratio:4/5}.ph.sq{aspect-ratio:1}.ph.cin{aspect-ratio:16/6}
+.g{display:grid;gap:1.2rem;margin-bottom:1.2rem}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}
+.proc{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--border);margin:4rem 0}
+.proc-item{padding:2.2rem;border-right:1px solid var(--border)}
+.proc-item:last-child{border-right:none}
+.proc-n{font-family:var(--disp);font-size:2.4rem;font-weight:800;color:rgba(242,242,242,.04);margin-bottom:.8rem}
+.proc-t{font-size:.88rem;font-weight:600;font-family:var(--disp);letter-spacing:-.01em;margin-bottom:.55rem}
+.proc-d{font-size:.78rem;color:rgba(242,242,242,.3);line-height:1.72}
+
+/* ── CINEMATIC INTROS (simple white) ── */
+.cinematic-overlay{position:fixed;inset:0;z-index:2500;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .3s;background:#000}
+.cinematic-overlay.play{opacity:1;pointer-events:all}
+.intro-content{display:flex;flex-direction:column;align-items:center;gap:1.2rem;opacity:0;transition:opacity .9s .55s}
+.cinematic-overlay.play .intro-content{opacity:1}
+.intro-name{font-family:var(--disp);font-size:clamp(3rem,8vw,6rem);font-weight:800;letter-spacing:-.02em;text-transform:uppercase;color:#fff}
+.intro-sub{font-family:var(--body);font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(255,255,255,.3)}
+
+/* ── AUDI CINEMATIC ── */
+.a-cin{position:fixed;inset:0;background:#000;z-index:2500;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s}
+.a-cin.play{opacity:1;pointer-events:all}
+
+.a-cin.play::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 55% at 50% 50%,rgba(180,40,10,.08) 0%,transparent 70%);animation:auPulse 1.8s ease-in-out 3}
+@keyframes auPulse{0%,100%{opacity:0}50%{opacity:1}}
+
+.hl{position:absolute;width:58vw;height:3px;top:50%}
+.hl-l{left:0;transform-origin:left center;background:linear-gradient(to right,transparent,#fff 40%,rgba(255,80,30,.5));box-shadow:0 0 50px 16px rgba(255,255,255,.5),0 0 90px 32px rgba(220,60,0,.18);transform:translateY(-50%) scaleX(0)}
+.hl-r{right:0;transform-origin:right center;background:linear-gradient(to left,transparent,#fff 40%,rgba(255,80,30,.5));box-shadow:0 0 50px 16px rgba(255,255,255,.5),0 0 90px 32px rgba(220,60,0,.18);transform:translateY(-50%) scaleX(0)}
+.a-cin.play .hl-l{animation:swL 1.7s cubic-bezier(.4,0,.2,1) forwards}
+.a-cin.play .hl-r{animation:swR 1.7s cubic-bezier(.4,0,.2,1) forwards .07s}
+@keyframes swL{0%{transform:translateY(-50%) scaleX(0);opacity:0}25%{opacity:1}62%{transform:translateY(-50%) scaleX(1)}100%{transform:translateY(-50%) scaleX(0) translateX(120vw);opacity:0}}
+@keyframes swR{0%{transform:translateY(-50%) scaleX(0);opacity:0}25%{opacity:1}62%{transform:translateY(-50%) scaleX(1)}100%{transform:translateY(-50%) scaleX(0) translateX(-120vw);opacity:0}}
+
+.a-floor{position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(to top,rgba(255,40,10,.04) 0%,transparent 100%);pointer-events:none}
+.a-floor::after{content:'';position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}
+
+.a-logo{opacity:0;transition:opacity .9s .6s;display:flex;flex-direction:column;align-items:center;gap:1.2rem}
+.a-cin.sl .a-logo{opacity:1}
+.a-tag{font-family:var(--disp);font-size:.82rem;font-weight:400;letter-spacing:.44em;color:rgba(255,255,255,.32);text-transform:uppercase}
+
+.a-cin.sl .ring-svg circle{stroke-dasharray:130;stroke-dashoffset:130;animation:drawRing .6s cubic-bezier(.16,1,.3,1) forwards}
+.a-cin.sl .ring-svg circle:nth-child(1){animation-delay:.0s}
+.a-cin.sl .ring-svg circle:nth-child(2){animation-delay:.08s}
+.a-cin.sl .ring-svg circle:nth-child(3){animation-delay:.16s}
+.a-cin.sl .ring-svg circle:nth-child(4){animation-delay:.24s}
+@keyframes drawRing{to{stroke-dashoffset:0}}
+
+#modal-audi{background:#050404}
+#modal-audi .modal-bar{background:linear-gradient(to bottom,rgba(5,4,4,.97) 0%,transparent 100%)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px){
+  #nav,#hero,.works-top,#about,#cv,#contact,footer,.modal-body{padding-left:6%;padding-right:6%}
+  .hero-name{font-size:clamp(3.5rem,14vw,6rem)}
+  .hero-quote{font-size:.88rem}
+  .prow{grid-template-columns:3.5rem 1fr 2.5rem;gap:1rem;padding:1.5rem 6%}
+  .p-cat{display:none}
+  #contact{grid-template-columns:1fr;gap:3rem}
+  .cv-block{grid-template-columns:1fr;gap:2rem}
+  .cv-cat{position:static}
+  .m-title{font-size:clamp(3rem,10vw,4rem)}
+  .m-meta{gap:1rem;flex-direction:column}
+  .g2,.g3{grid-template-columns:1fr}
+  .proc{grid-template-columns:1fr}
+  .proc-item{border-right:none;border-bottom:1px solid var(--border)}
+  .proc-item:last-child{border-bottom:none}
+  .nav-links{display:none}
+  .hero-ghost{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="prog"></div>
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<div class="cinematic-overlay" id="intro-catalog">
+  <div class="intro-content"><div class="intro-name">Catalogo</div><div class="intro-sub">Vino 2025</div></div>
+</div>
+<div class="cinematic-overlay" id="intro-giraffa">
+  <div class="intro-content"><div class="intro-name">Giraffa Tour</div><div class="intro-sub">Safari · Avventura</div></div>
+</div>
+<div class="cinematic-overlay" id="intro-exurban">
+  <div class="intro-content"><div class="intro-name">Exurban</div><div class="intro-sub">Mobilità Elettrica</div></div>
+</div>
+
+<div class="a-cin" id="a-cin">
+  <div class="hl hl-l"></div>
+  <div class="hl hl-r"></div>
+  <div class="a-floor"></div>
+  <div class="a-logo" id="a-logo">
+    <svg class="ring-svg" width="184" height="46" viewBox="0 0 184 46">
+      <circle cx="23"  cy="23" r="20" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.5"/>
+      <circle cx="61"  cy="23" r="20" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.5"/>
+      <circle cx="99"  cy="23" r="20" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.5"/>
+      <circle cx="137" cy="23" r="20" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2.5"/>
+    </svg>
+    <div class="a-tag">Vorsprung durch Technik</div>
+  </div>
+</div>
+
+<nav id="nav">
+  <a href="#hero" class="nav-logo">Keshav Saini</a>
+  <div class="nav-r">
+    <ul class="nav-links">
+      <li><a href="#works">Lavori</a></li>
+      <li><a href="#about">Profilo</a></li>
+      <li><a href="#cv">CV</a></li>
+      <li><a href="#contact">Contatti</a></li>
+    </ul>
+    <button id="snd" title="Sound"><span id="si">♪</span></button>
+  </div>
+</nav>
+
+<section id="hero">
+  <div class="hero-grid">
+    <div class="hg-h"></div>
+    <div class="hg-h"></div>
+    <div class="hg-v"></div>
+    <div class="hg-v"></div>
+  </div>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-inner">
+      <span class="ti w">Keshav Saini</span><span class="ti">Graphic Designer</span><span class="ti">Logo Design</span><span class="ti">Brand Identity</span><span class="ti">Tipografia Editoriale</span><span class="ti">Print Design</span><span class="ti">Impaginazione</span><span class="ti">Adobe Suite</span><span class="ti">Viadana · MN · Italia</span><span class="ti w">Portfolio 2025</span>
+      <span class="ti w">Keshav Saini</span><span class="ti">Graphic Designer</span><span class="ti">Logo Design</span><span class="ti">Brand Identity</span><span class="ti">Tipografia Editoriale</span><span class="ti">Print Design</span><span class="ti">Impaginazione</span><span class="ti">Adobe Suite</span><span class="ti">Viadana · MN · Italia</span><span class="ti w">Portfolio 2025</span>
+    </div>
+  </div>
+
+  <div class="hero-ghost" aria-hidden="true">25</div>
+
+  <div class="hero-content">
+    <p class="hero-label">Grafico — Viadana MN, Italia — 2025</p>
+    <h1 class="hero-name" aria-label="Keshav Saini">
+      <span class="ln"><span class="lw">Keshav</span></span>
+      <span class="ln"><span class="lw outline">Saini</span></span>
+    </h1>
+    <p class="hero-quote">Design che resiste al tempo — ogni forma è una risposta precisa a un problema reale.</p>
+    <div class="hero-foot">
+      <p class="hero-desc">Grafico specializzato in brand identity, print design e comunicazione visiva premium.</p>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1.5rem">
+        <div class="hero-status"><div class="dot"></div>Disponibile per progetti</div>
+        <div class="hero-scroll"><div class="scr-line"></div>scroll</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="works">
+  <div class="works-top">
+    <div><div class="lbl rev">Selected Works</div><h2 class="sec-h rev">Lavori.</h2></div>
+    <div class="works-num rev" aria-hidden="true">04</div>
+  </div>
+  <div id="pfloat" aria-hidden="true">—</div>
+  
+  <div class="prow rev"    data-p="audi"    onclick="openM('audi')">   <span class="p-idx">01</span><span class="p-ttl">Audi Event</span><span class="p-cat">Exhibition Design · Stand</span><div class="p-arr">↗</div></div>
+  <div class="prow rev d1" data-p="giraffa" onclick="openM('giraffa')"><span class="p-idx">02</span><span class="p-ttl">Giraffa Tour</span><span class="p-cat">Logo Design · Branding</span><div class="p-arr">↗</div></div>
+  <div class="prow rev d2" data-p="exurban" onclick="openM('exurban')"><span class="p-idx">03</span><span class="p-ttl">Exurban</span><span class="p-cat">Brand Identity · Logo</span><div class="p-arr">↗</div></div>
+  <div class="prow rev d3" data-p="catalog" onclick="openM('catalog')"><span class="p-idx">04</span><span class="p-ttl">Catalogo</span><span class="p-cat">Print · Layout · Impaginazione</span><div class="p-arr">↗</div></div>
+</section>
+
+<section id="about">
+  <div class="about-content">
+    <div class="lbl rev">01 — Profilo</div><h2 class="sec-h rev">Chi sono.</h2>
+    <p class="about-body-main rev d1">Sono <strong>Keshav Saini</strong>, grafico con formazione specialistica in comunicazione visiva. Ogni progetto nasce da una domanda: come rendere questa idea indimenticabile?</p>
+    <p class="about-body-sub rev d2">Dal logo di una startup all'impaginazione di un catalogo premium, il mio processo si basa su ricerca approfondita, tipografia precisa e soluzioni visive che resistono al tempo. Trasformo concetti complessi in design pulito e funzionale. Attualmente disponibile per collaborazioni freelance.</p>
+    <div class="pills rev d3">
+      <span class="pill">Logo Design</span><span class="pill">Brand Identity</span><span class="pill">Print &amp; Layout</span><span class="pill">Packaging</span><span class="pill">Social Media</span><span class="pill">Tipografia Editoriale</span><span class="pill">Mockup Realistici</span><span class="pill">Video Editing</span><span class="pill">AI Generativa</span>
+    </div>
+  </div>
+</section>
+
+<section id="cv">
+  <div class="lbl rev">02 — Curriculum</div><h2 class="sec-h rev">Esperienza &amp;<br>Formazione.</h2>
+  <div class="cv-block rev"><div class="cv-cat">Esperienza</div><div>
+    <div class="cv-item"><div><div class="cv-role">Tirocinio Grafico</div><div class="cv-co">Palm W&amp;P Cooperativa — Mantova</div><ul class="cv-bl"><li>Progettazione e impaginazione di cataloghi con particolare attenzione alla tipografia</li><li>Supporto alle attività di comunicazione visiva e brand aziendale</li><li>Editing professionale di immagini con Adobe Photoshop e Illustrator</li></ul></div><div class="cv-dt">Gen – Mar<br>2025</div></div>
+    <div class="cv-item"><div><div class="cv-role">Tirocinio Comunicazione Visiva</div><div class="cv-co">Info Point — Pomponesco</div><ul class="cv-bl"><li>Creazione autonoma di volantini, mappe e materiali informativi per turisti</li><li>Assistenza al pubblico in front office e in modalità smart working</li></ul></div><div class="cv-dt">Feb–Giu<br>Set–Dic 2023</div></div>
+    <div class="cv-item"><div><div class="cv-role">Addetto Crew</div><div class="cv-co">McDonald's</div><ul class="cv-bl"><li>Lavoro in team in ambiente dinamico, gestione ordini e servizio clienti</li></ul></div><div class="cv-dt">Set – Ott<br>2025</div></div>
+  </div></div>
+  <div class="cv-block rev d1"><div class="cv-cat">Formazione</div><div>
+    <div class="cv-item"><div><div class="cv-role">Diploma Grafica</div><div class="cv-co">IAL Lombardia</div></div><div class="cv-dt">2024 – 2025</div></div>
+    <div class="cv-item"><div><div class="cv-role">Qualifica Professionale — Grafico</div><div class="cv-co">IAL Lombardia</div></div><div class="cv-dt">2023 – 2024</div></div>
+    <div class="cv-item"><div><div class="cv-role">Licenza Media</div><div class="cv-co">San Matteo delle Chiaviche</div></div><div class="cv-dt">2021</div></div>
+  </div></div>
+  <div class="cv-block rev d2"><div class="cv-cat">Skills</div><div>
+    <div class="sub-lbl">Software</div><div class="sk-tags" style="margin-bottom:2rem"><span class="sk hi">Adobe InDesign</span><span class="sk hi">Adobe Photoshop</span><span class="sk hi">Adobe Illustrator</span><span class="sk">Suite Microsoft Office</span><span class="sk">AI Generativa</span><span class="sk">Video Editing</span></div>
+    <div class="sub-lbl">Discipline</div><div class="sk-tags" style="margin-bottom:2rem"><span class="sk">Tipografia Editoriale</span><span class="sk">Impaginazione</span><span class="sk">Logo Design</span><span class="sk">Brand Identity</span><span class="sk">Packaging Design</span><span class="sk">Social Media Design</span><span class="sk">Print Design</span></div>
+    <div class="sub-lbl">Lingue</div><div style="margin-bottom:2rem"><div class="lang-r">Italiano<span>Madrelingua</span></div><div class="lang-r">Hindi<span>Madrelingua</span></div><div class="lang-r">Punjabi<span>Madrelingua</span></div><div class="lang-r">Inglese<span>Professionale</span></div></div>
+    <div class="sub-lbl">Patenti &amp; Interessi</div><div class="sk-tags"><span class="sk hi">Patente B</span><span class="sk hi">A1</span><span class="sk">Trading Algoritmico</span><span class="sk">Intelligenza Artificiale</span><span class="sk">Tecnologie Digitali</span></div>
+  </div></div>
+</section>
+
+<section id="contact">
+  <div><div class="lbl rev">03 — Contatti</div><h2 class="c-big rev">Hai un<br>progetto<br><em>in mente?</em></h2></div>
+  <div class="c-list rev d1">
+    <div class="c-row"><div class="c-l">Stato</div><div class="c-v"><span class="avail-dot"></span>Disponibile per progetti</div></div>
+    <div class="c-row"><div class="c-l">Email</div><div class="c-v"><a href="mailto:keshav1saini2@gmail.com">keshav1saini2@gmail.com</a></div></div>
+    <div class="c-row"><div class="c-l">Telefono</div><div class="c-v"><a href="tel:+393534329894">+39 353 432 9894</a></div></div>
+    <div class="c-row"><div class="c-l">Portfolio</div><div class="c-v"><a href="https://bit.ly/GraficoK" target="_blank" rel="noopener">bit.ly/GraficoK</a></div></div>
+    <div class="c-row"><div class="c-l">Dove</div><div class="c-v">Viadana, Mantova — Italia</div></div>
+  </div>
+</section>
+<footer><p>© 2025 Keshav Saini</p><p>Graphic Designer · Viadana MN</p></footer>
+
+<div class="modal" id="modal-audi">
+  <div class="modal-bar"><button class="m-back" onclick="closeM('audi')" style="color:rgba(200,80,80,.4)">Torna al portfolio</button><button class="m-x" onclick="closeM('audi')" style="border-color:rgba(140,0,0,.2);color:rgba(160,60,60,.4)" aria-label="Chiudi">✕</button></div>
+  <div class="modal-body" style="position:relative;z-index:2">
+    <div class="m-eye" style="color:rgba(200,80,80,.6)">Exhibition Design · Stand · Print</div>
+    <h2 class="m-title">Audi<br>Event xXx</h2>
+    <div class="m-meta" style="border-color:rgba(140,0,0,.15)">
+      <div class="m-mi"><div class="l">Cliente</div><div class="v">Audi AG</div></div>
+      <div class="m-mi"><div class="l">Tipo</div><div class="v">Stand Espositivo</div></div>
+      <div class="m-mi"><div class="l">Modello</div><div class="v">Audi RS 3356</div></div>
+      <div class="m-mi"><div class="l">Software</div><div class="v">Photoshop · Illustrator</div></div>
+      <div class="m-mi"><div class="l">Output</div><div class="v">Fotomontaggio Realistico</div></div>
+    </div>
+    <p class="m-desc"><strong>Audi Event xXx</strong> è la progettazione di uno stand espositivo per una fiera automotive. Il brief: catturare l'essenza del brand — precisione ingegneristica tedesca più potenza sportiva — in circa 6 metri quadri di superficie.<br><br>Lo stand si sviluppa su due pannelli ad angolo. Il pannello sinistro: nero assoluto, logo Audi illuminato, onda in linee rosse parallele che richiama la silhouette di un motore a piena accelerazione. Il pannello destro rompe il nero con la fotografia action dell'Audi RS 3356.</p>
+    <div class="g"><div class="ph std" style="aspect-ratio:16/9;border-color:rgba(120,0,0,.1)"><div class="ph-ico">🏎️</div><span>Stand Audi — render frontale completo · aggiungi mockup</span></div></div>
+    <div class="g g2">
+      <div class="ph std" style="border-color:rgba(120,0,0,.08)"><div class="ph-ico">⭕</div><span>Pannello sinistro — logo + onda rossa</span></div>
+      <div class="ph std" style="border-color:rgba(120,0,0,.08)"><div class="ph-ico">📸</div><span>Pannello destro — RS 3356 action shot</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:2rem;margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid rgba(120,0,0,.12)">
+      <svg width="172" height="44" viewBox="0 0 172 44">
+        <circle cx="22"  cy="22" r="19" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+        <circle cx="58"  cy="22" r="19" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+        <circle cx="94"  cy="22" r="19" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+        <circle cx="130" cy="22" r="19" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+      </svg>
+      <div style="font-family:var(--disp);font-size:.8rem;font-weight:600;letter-spacing:.38em;color:rgba(255,255,255,.15);text-transform:uppercase">Vorsprung durch Technik</div>
+    </div>
+    <div class="proc" style="border-color:rgba(120,0,0,.12)">
+      <div class="proc-item" style="border-color:rgba(120,0,0,.12)"><div class="proc-n">01</div><div class="proc-t">Tensione visiva</div><div class="proc-d">Nero vs fotografia. Geometria vs organico. Il contrasto tra i due pannelli crea la stessa tensione di un RS3 da 0 a 100.</div></div>
+      <div class="proc-item" style="border-color:rgba(120,0,0,.12)"><div class="proc-n">02</div><div class="proc-t">L'onda aerodinamica</div><div class="proc-d">Linee rosse parallele che si curvano come le curve di livello di un'auto in galleria del vento. Metafora della velocità.</div></div>
+      <div class="proc-item" style="border-color:rgba(120,0,0,.12)"><div class="proc-n">03</div><div class="proc-t">Fotomontaggio</div><div class="proc-d">Design inserito in spazio fisico realistico: luci spot, ombre proprie, profondità. Validazione visiva prima della produzione.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-giraffa">
+  <div class="modal-bar"><button class="m-back" onclick="closeM('giraffa')">Torna al portfolio</button><button class="m-x" onclick="closeM('giraffa')" aria-label="Chiudi">✕</button></div>
+  <div class="modal-body">
+    <div class="m-eye">Logo Design · Brand Identity · 2024</div>
+    <h2 class="m-title">Giraffa<br>Tour</h2>
+    <div class="m-meta">
+      <div class="m-mi"><div class="l">Anno</div><div class="v">2024</div></div>
+      <div class="m-mi"><div class="l">Settore</div><div class="v">Turismo · Africa</div></div>
+      <div class="m-mi"><div class="l">Ruolo</div><div class="v">Logo Design, Brand System</div></div>
+      <div class="m-mi"><div class="l">Software</div><div class="v">Adobe Illustrator</div></div>
+      <div class="m-mi"><div class="l">Target</div><div class="v">Viaggiatori 25–55 anni</div></div>
+    </div>
+    <p class="m-desc"><strong>Giraffa Tour</strong> è un'agenzia di viaggi specializzata in safari nell'Africa subsahariana. La sfida: creare un marchio che comunicasse avventura autentica senza scadere nei cliché del settore.<br><br>Il pittogramma nasce dall'unione di due icone in una forma unica: una valigia stilizzata con la silhouette di una giraffa nello spazio negativo. I colori — ocra africano, marrone terra, nero — richiamano la savana al tramonto.</p>
+    <div class="g g2">
+      <div class="ph sq"><div class="ph-ico">🦒</div><span>Logo principale — sfondo chiaro</span></div>
+      <div class="ph sq"><div class="ph-ico">📐</div><span>Construction grid del pittogramma</span></div>
+    </div>
+    <div class="g"><div class="ph wide"><div class="ph-ico">🎨</div><span>Brand palette · Tipografia · Colori ufficiali</span></div></div>
+    <div class="g g3">
+      <div class="ph tall"><div class="ph-ico">🏷️</div><span>Mockup cartellino bagaglio</span></div>
+      <div class="ph tall"><div class="ph-ico">📱</div><span>App icon su iPhone</span></div>
+      <div class="ph tall"><div class="ph-ico">🌍</div><span>Applicazione su materiali</span></div>
+    </div>
+    <div class="proc">
+      <div class="proc-item"><div class="proc-n">01</div><div class="proc-t">Dualità narrativa</div><div class="proc-d">Un pittogramma, due storie. La valigia racconta il viaggiatore; la giraffa racconta la destinazione.</div></div>
+      <div class="proc-item"><div class="proc-n">02</div><div class="proc-t">Palette savana</div><div class="proc-d">Ocra #F5A623, Marrone #8B6914, Nero. Tre colori che bastano. Nessun azzurro "turistico".</div></div>
+      <div class="proc-item"><div class="proc-n">03</div><div class="proc-t">Sistema di marca</div><div class="proc-d">Dal cartellino fisico all'icona 16×16: il pittogramma mantiene forza visiva in ogni formato.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-exurban">
+  <div class="modal-bar"><button class="m-back" onclick="closeM('exurban')">Torna al portfolio</button><button class="m-x" onclick="closeM('exurban')" aria-label="Chiudi">✕</button></div>
+  <div class="modal-body">
+    <div class="m-eye">Brand Identity · Logo Design · Mobilità Elettrica</div>
+    <h2 class="m-title">Exurban</h2>
+    <div class="m-meta">
+      <div class="m-mi"><div class="l">Settore</div><div class="v">Mobilità Elettrica</div></div>
+      <div class="m-mi"><div class="l">Target</div><div class="v">Under 35 · Urbani</div></div>
+      <div class="m-mi"><div class="l">Valori</div><div class="v">Velocità · Eco · Libertà</div></div>
+      <div class="m-mi"><div class="l">Software</div><div class="v">Adobe Illustrator</div></div>
+      <div class="m-mi"><div class="l">Applicazioni</div><div class="v">Totem · App · Scooter</div></div>
+    </div>
+    <p class="m-desc"><strong>Exurban</strong> è un servizio di noleggio scooter elettrici — ecologico, economico, immediato. Il brand doveva parlare a giovani under 35: identità tecnologica e urgente allo stesso tempo.<br><br>Il logo nasce da una domanda: cos'è uno scooter ridotto alla sua essenza? Le due luci frontali che convergono formano una "V" aerodinamica — stilizzata, tagliente, riconoscibile a qualsiasi scala.</p>
+    <div class="g g2">
+      <div class="ph std"><div class="ph-ico">⚡</div><span>Logo su sfondo nero — versione principale</span></div>
+      <div class="ph std"><div class="ph-ico">📐</div><span>Construction grid — la "V" pittogramma</span></div>
+    </div>
+    <div class="g"><div class="ph wide"><div class="ph-ico">🎨</div><span>Brand system — palette, tipografia, versioni colore</span></div></div>
+    <div class="g g3">
+      <div class="ph sq"><div class="ph-ico">⬛</div><span>Brand palette</span></div>
+      <div class="ph sq"><div class="ph-ico">📱</div><span>App icon — iOS</span></div>
+      <div class="ph sq"><div class="ph-ico">🛵</div><span>Logo su scooter</span></div>
+    </div>
+    <div class="g"><div class="ph" style="aspect-ratio:16/8"><div class="ph-ico">🏙️</div><span>Fotomontaggio — totem pubblicitario stradale</span></div></div>
+    <div class="proc">
+      <div class="proc-item"><div class="proc-n">01</div><div class="proc-t">La "V" come vettore</div><div class="proc-d">Le luci frontali semplificate in geometria pura. Velocità, direzione, energia — tutto in una forma.</div></div>
+      <div class="proc-item"><div class="proc-n">02</div><div class="proc-t">Tipografia tecnica</div><div class="proc-d">Carattere condensato, peso massimo. La "X" accentuata crea il punto di riconoscimento immediato del marchio.</div></div>
+      <div class="proc-item"><div class="proc-n">03</div><div class="proc-t">Scalabilità totale</div><div class="proc-d">Dal totem da 3 metri all'icona 16×16: il pittogramma rimane riconoscibile. Brand che funzionano solo in grande non sono brand.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-catalog">
+  <div class="modal-bar"><button class="m-back" onclick="closeM('catalog')">Torna al portfolio</button><button class="m-x" onclick="closeM('catalog')" aria-label="Chiudi">✕</button></div>
+  <div class="modal-body">
+    <div class="m-eye">Print Design · Layout · Impaginazione</div>
+    <h2 class="m-title">Catalogo<br>Vino 2025</h2>
+    <div class="m-meta">
+      <div class="m-mi"><div class="l">Anno</div><div class="v">2025</div></div>
+      <div class="m-mi"><div class="l">Cliente</div><div class="v">Palm W&amp;P Cooperativa</div></div>
+      <div class="m-mi"><div class="l">Ruolo</div><div class="v">Layout Design, Tipografia</div></div>
+      <div class="m-mi"><div class="l">Software</div><div class="v">Adobe InDesign</div></div>
+      <div class="m-mi"><div class="l">Output</div><div class="v">PDF Stampa CMYK</div></div>
+    </div>
+    <p class="m-desc">Durante il tirocinio presso <strong>Palm W&amp;P Cooperativa</strong> a Mantova ho progettato il catalogo prodotti della linea vino 2025. Il documento doveva essere al tempo stesso strumento commerciale e pezzo editoriale — chiarezza assoluta senza sacrificare l'estetica premium.<br><br>Ho costruito una griglia modulare con ampi margini, gerarchia tipografica in tre livelli e fotografia pulita su sfondo neutro.</p>
+    <div class="g"><div class="ph wide"><div class="ph-ico">📄</div><span>Copertina catalogo — aggiungi mockup</span></div></div>
+    <div class="g g2">
+      <div class="ph std"><div class="ph-ico">📖</div><span>Spread interno — Cassette Singole &amp; Deluxe</span></div>
+      <div class="ph std"><div class="ph-ico">📖</div><span>Spread interno — Cassette Multiple &amp; Listino</span></div>
+    </div>
+    <div class="g"><div class="ph cin"><div class="ph-ico">🍷</div><span>Full spread aperto — aggiungi mockup fotografico</span></div></div>
+    <div class="proc">
+      <div class="proc-item"><div class="proc-n">01</div><div class="proc-t">Analisi del brief</div><div class="proc-d">Mappatura prodotti, gerarchia informativa, studio del target: rivenditori B2B e acquirenti fascia alta.</div></div>
+      <div class="proc-item"><div class="proc-n">02</div><div class="proc-t">Griglia editoriale</div><div class="proc-d">Costruzione in InDesign con stili paragrafo consistenti. Serif per titoli prodotto, sans-serif light per dettagli tecnici.</div></div>
+      <div class="proc-item"><div class="proc-n">03</div><div class="proc-t">Output finale</div><div class="proc-d">PDF/X-4 con profilo CMYK, margini al vivo 3mm. Pronto per stampa offset su carta patinata opaca 150g.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── CURSOR ── */
+const cur = document.getElementById('cur'), ring = document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+if(window.matchMedia('(pointer: fine)').matches){
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+  (function loop(){
+    cur.style.left=mx+'px';cur.style.top=my+'px';
+    rx+=(mx-rx)*.085;ry+=(my-ry)*.085;
+    ring.style.left=rx+'px';ring.style.top=ry+'px';
+    requestAnimationFrame(loop);
+  })();
+}
+document.querySelectorAll('a,button,.prow,.pill,.sk').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('lh'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('lh'));
+});
+
+/* ── PROGRESS BAR ── */
+const prog=document.getElementById('prog');
+window.addEventListener('scroll',()=>{
+  prog.style.width=(scrollY/(document.body.scrollHeight-innerHeight)*100)+'%';
+},{passive:true});
+
+/* ── NAV ── */
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',scrollY>80)},{passive:true});
+
+/* ── AUDIO ── */
+let actx,soundOn=true;
+function getA(){
+  if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended')actx.resume();
+  return actx;
+}
+
+/* UI tick */
+function psTick(){
+  if(!soundOn)return;
+  try{
+    const c=getA(),o=c.createOscillator(),g=c.createGain();
+    o.type='square';o.frequency.setValueAtTime(1600,c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1100,c.currentTime+.04);
+    g.gain.setValueAtTime(.018,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.04);
+    o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.05);
+  }catch(e){}
+}
+
+/* ENGINE START SOUND */
+function auEngineStart(){
+  if(!soundOn)return;
+  try{
+    const c=getA();
+    const now=c.currentTime;
+
+    const crankOsc=c.createOscillator();
+    const crankGain=c.createGain();
+    const crankFilter=c.createBiquadFilter();
+    crankFilter.type='bandpass';crankFilter.frequency.value=180;crankFilter.Q.value=0.6;
+    crankOsc.type='sawtooth';
+    crankOsc.frequency.setValueAtTime(22,now);
+    crankOsc.frequency.linearRampToValueAtTime(55,now+.55);
+    crankGain.gain.setValueAtTime(0,now);
+    crankGain.gain.linearRampToValueAtTime(.35,now+.12);
+    crankGain.gain.setValueAtTime(.35,now+.48);
+    crankGain.gain.linearRampToValueAtTime(0,now+.58);
+    crankOsc.connect(crankFilter);crankFilter.connect(crankGain);crankGain.connect(c.destination);
+    crankOsc.start(now);crankOsc.stop(now+.6);
+
+    const bang=c.createOscillator();
+    const bangGain=c.createGain();
+    bang.type='sawtooth';bang.frequency.setValueAtTime(90,now+.55);
+    bang.frequency.exponentialRampToValueAtTime(40,now+.75);
+    bangGain.gain.setValueAtTime(0,now+.54);
+    bangGain.gain.linearRampToValueAtTime(.55,now+.56);
+    bangGain.gain.exponentialRampToValueAtTime(.0001,now+.78);
+    bang.connect(bangGain);bangGain.connect(c.destination);
+    bang.start(now+.54);bang.stop(now+.8);
+
+    [[38,'sawtooth',.11],[76,'square',.055],[114,'sine',.03],[52,'sawtooth',.07]].forEach(([f,tp,v],i)=>{
+      const o=c.createOscillator(),g=c.createGain(),flt=c.createBiquadFilter();
+      flt.type='lowpass';flt.frequency.value=260;
+      o.type=tp;
+      o.frequency.setValueAtTime(f*.95+Math.random()*2,now+.58);
+      o.frequency.linearRampToValueAtTime(f,now+1.1);
+      g.gain.setValueAtTime(0,now+.55);
+      g.gain.linearRampToValueAtTime(v,now+.75+i*.04);
+      g.gain.setValueAtTime(v,now+1.6);
+      g.gain.linearRampToValueAtTime(v*.3,now+2.0);
+      g.gain.exponentialRampToValueAtTime(.0001,now+2.4);
+      o.connect(flt);flt.connect(g);g.connect(c.destination);
+      o.start(now+.55);o.stop(now+2.5);
+    });
+
+    const rev=c.createOscillator();
+    const revGain=c.createGain();
+    const revFilter=c.createBiquadFilter();
+    revFilter.type='lowpass';revFilter.frequency.setValueAtTime(400,now+1.3);
+    revFilter.frequency.exponentialRampToValueAtTime(1800,now+2.1);
+    rev.type='sawtooth';
+    rev.frequency.setValueAtTime(42,now+1.35);
+    rev.frequency.exponentialRampToValueAtTime(160,now+2.1);
+    rev.frequency.exponentialRampToValueAtTime(55,now+2.4);
+    revGain.gain.setValueAtTime(0,now+1.3);
+    revGain.gain.linearRampToValueAtTime(.28,now+1.6);
+    revGain.gain.setValueAtTime(.28,now+2.05);
+    revGain.gain.exponentialRampToValueAtTime(.0001,now+2.5);
+    rev.connect(revFilter);revFilter.connect(revGain);revGain.connect(c.destination);
+    rev.start(now+1.3);rev.stop(now+2.6);
+
+    [2.05,2.15,2.28].forEach(t=>{
+      const pop=c.createOscillator(),popG=c.createGain();
+      pop.type='square';pop.frequency.setValueAtTime(55+Math.random()*20,now+t);
+      pop.frequency.exponentialRampToValueAtTime(28,now+t+.08);
+      popG.gain.setValueAtTime(.18,now+t);
+      popG.gain.exponentialRampToValueAtTime(.0001,now+t+.1);
+      pop.connect(popG);popG.connect(c.destination);
+      pop.start(now+t);pop.stop(now+t+.12);
+    });
+
+  }catch(e){}
+}
+
+const sBtn=document.getElementById('snd'),sI=document.getElementById('si');
+sBtn.addEventListener('click',e=>{
+  e.stopPropagation();soundOn=!soundOn;
+  sI.textContent=soundOn?'♪':'♩';
+  sBtn.classList.toggle('off',!soundOn);
+  if(soundOn)psTick();
+});
+document.querySelectorAll('.prow').forEach(r=>r.addEventListener('mouseenter',()=>psTick()));
+document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('mouseenter',()=>psTick()));
+
+/* ── FLOAT LABEL ── */
+const pf=document.getElementById('pfloat');
+const pL={catalog:'Catalogo Vino 2025',giraffa:'Giraffa Tour',exurban:'Exurban',audi:'Audi Event xXx'};
+document.querySelectorAll('.prow').forEach(r=>{
+  r.addEventListener('mouseenter',()=>{pf.textContent=pL[r.dataset.p]||'';pf.classList.add('show')});
+  r.addEventListener('mouseleave',()=>pf.classList.remove('show'));
+  r.addEventListener('mousemove',e=>{pf.style.left=e.clientX+'px';pf.style.top=e.clientY+'px'});
+});
+
+/* ── SCROLL REVEAL ── */
+const ro=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('on');ro.unobserve(e.target)}
+}),{threshold:.07});
+document.querySelectorAll('.rev').forEach(el=>ro.observe(el));
+
+/* ── MODALS ── */
+function runIntro(id){
+  if(id==='audi'){
+    const cin=document.getElementById('a-cin');
+    cin.classList.remove('play','sl');
+    void cin.offsetWidth;
+    cin.style.opacity='1';cin.style.pointerEvents='all';
+    cin.classList.add('play');
+    auEngineStart();
+    setTimeout(()=>cin.classList.add('sl'),640);
+    setTimeout(()=>{
+      cin.style.transition='opacity .65s';cin.style.opacity='0';
+      setTimeout(()=>{
+        cin.style.pointerEvents='none';cin.style.transition='';
+        cin.classList.remove('play','sl');
+      },700);
+    },2900);
+  } else {
+    const ov=document.getElementById(`intro-${id}`);
+    if(ov){ov.classList.add('play');psTick();setTimeout(()=>ov.classList.remove('play'),1500)}
+  }
+}
+
+window.openM=function(id){
+  const m=document.getElementById('modal-'+id);
+  if(m){runIntro(id);setTimeout(()=>{m.classList.add('open');document.body.style.overflow='hidden';m.scrollTop=0},200)}
+};
+window.closeM=function(id){
+  const m=document.getElementById('modal-'+id);
+  if(m){m.classList.remove('open');document.body.style.overflow='';psTick()}
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.modal.open').forEach(m=>closeM(m.id.replace('modal-','')));
+});
+document.addEventListener('click',()=>{try{getA()}catch(e){}},{once:true});
+</script>
+</body>
+</html>
